@@ -54,6 +54,10 @@ $cats = getPDO()->query('SELECT * FROM categories ORDER BY name')->fetchAll();
       </form>
     </div>
 
+    <a href="<?= BASE_URL ?>/contact.php" class="nav-contact-link">
+      <i class="bi bi-envelope"></i> Contact
+    </a>
+
     <div class="nav-links">
       <?php if ($user): ?>
         <a href="<?= BASE_URL ?>/annonce/create.php" class="btn-publish btn">

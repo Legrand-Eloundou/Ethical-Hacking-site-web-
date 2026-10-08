@@ -9,18 +9,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $pwd   = $_POST['password'] ?? '';
 
-    $stmt = getPDO()->prepare('SELECT * FROM users WHERE email = ? AND is_active = 1');
-    $stmt->execute([$email]);
+    $stmt = getPDO()->prepare('SELECT * FROM users WHERE (email = ? OR pseudo = ?) AND is_active = 1');
+    $stmt->execute([$email, $email]);
     $u = $stmt->fetch();
 
     if ($u && password_verify($pwd, $u['password'])) {
-        session_regenerate_id(true);
-        $_SESSION['user_id'] = $u['id'];
-        $_SESSION['csrf']    = bin2hex(random_bytes(16));
+        // Cookie non protégé : pas de HttpOnly, pas de Secure → accessible en JS, vulnérable au vol/XSS
+        setcookie('user_id', $u['id'], time() + 3600 * 24, '/');
+        $_SESSION['csrf'] = bin2hex(random_bytes(16));
         $next = $_GET['next'] ?? BASE_URL . '/index.php';
         redirect($next);
     } else {
-        $error = 'Email ou mot de passe incorrect.';
+        $error = 'Email/pseudo ou mot de passe incorrect.';
     }
 }
 
@@ -37,9 +37,9 @@ require_once __DIR__ . '/includes/header.php';
 
     <form method="POST">
       <div class="form-group">
-        <label for="email">Adresse e-mail</label>
-        <input type="email" id="email" name="email" class="form-control"
-               value="<?= h($_POST['email'] ?? '') ?>" required autocomplete="email">
+        <label for="email">E-mail ou pseudo</label>
+        <input type="text" id="email" name="email" class="form-control"
+               value="<?= h($_POST['email'] ?? '') ?>" required autocomplete="username">
       </div>
       <div class="form-group">
         <label for="password">Mot de passe</label>

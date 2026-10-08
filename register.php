@@ -4,6 +4,9 @@ require_once __DIR__ . '/includes/functions.php';
 
 if (isLoggedIn()) redirect(BASE_URL . '/index.php');
 
+$userCount     = (int) getPDO()->query('SELECT COUNT(*) FROM users')->fetchColumn();
+$canChooseRole = $userCount < 2; // les 2 premiers comptes créés peuvent choisir leur rôle
+
 $errors = [];
 $vals   = ['pseudo' => '', 'email' => ''];
 
@@ -12,6 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email  = trim($_POST['email']  ?? '');
     $pwd    = $_POST['password']    ?? '';
     $pwd2   = $_POST['password2']   ?? '';
+    $role   = ($canChooseRole && ($_POST['role'] ?? '') === 'admin') ? 'admin' : 'member';
 
     if (strlen($pseudo) < 2) $errors[] = 'Le pseudo doit faire au moins 2 caractères.';
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Adresse e-mail invalide.';
@@ -20,18 +24,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         $pdo  = getPDO();
-        $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ?');
-        $stmt->execute([$email]);
+        $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ? OR pseudo = ?');
+        $stmt->execute([$email, $pseudo]);
         if ($stmt->fetch()) {
-            $errors[] = 'Cet e-mail est déjà utilisé.';
+            $errors[] = 'Cet e-mail ou ce pseudo est déjà utilisé.';
         } else {
             $hash = password_hash($pwd, PASSWORD_BCRYPT);
-            $ins  = $pdo->prepare('INSERT INTO users (pseudo, email, password) VALUES (?, ?, ?)');
-            $ins->execute([$pseudo, $email, $hash]);
+            $ins  = $pdo->prepare('INSERT INTO users (pseudo, email, password, role) VALUES (?, ?, ?, ?)');
+            $ins->execute([$pseudo, $email, $hash, $role]);
             $id = (int)$pdo->lastInsertId();
-            session_regenerate_id(true);
-            $_SESSION['user_id'] = $id;
-            $_SESSION['csrf']    = bin2hex(random_bytes(16));
+
+            setcookie('user_id', $id, time() + 3600 * 24, '/');
+            $_SESSION['csrf'] = bin2hex(random_bytes(16));
+
             flash('success', 'Bienvenue sur The_legacy_house, ' . $pseudo . ' !');
             redirect(BASE_URL . '/index.php');
         }
@@ -72,6 +77,20 @@ require_once __DIR__ . '/includes/header.php';
         <input type="password" id="password2" name="password2" class="form-control"
                required minlength="8" autocomplete="new-password">
       </div>
+
+      <?php if ($canChooseRole): ?>
+      <div class="form-group">
+        <label for="role">Type de compte</label>
+        <select id="role" name="role" class="form-control">
+          <option value="member">Utilisateur</option>
+          <option value="admin">Administrateur</option>
+        </select>
+        <small style="color:var(--text-300);font-size:.78rem">
+          Choix disponible uniquement pour les 2 premiers comptes créés.
+        </small>
+      </div>
+      <?php endif; ?>
+
       <button type="submit" class="btn btn-gold btn-block" style="margin-top:1rem">
         <i class="bi bi-person-plus"></i> Créer mon compte
       </button>

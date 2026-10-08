@@ -1,15 +1,15 @@
 <?php
 require_once __DIR__ . '/db.php';
 
-// Démarre la session si pas déjà active
+// Démarre la session PHP (gardée uniquement pour csrf/flash)
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// ── Helpers session ──────────────────────────────────────────
+// ── Helpers session (cookie "maison" non protégé — version vulnérable) ──
 
 function isLoggedIn(): bool {
-    return !empty($_SESSION['user_id']);
+    return !empty($_COOKIE['user_id']);
 }
 
 function currentUser(): ?array {
@@ -18,10 +18,10 @@ function currentUser(): ?array {
     if ($user === null) {
         $pdo  = getPDO();
         $stmt = $pdo->prepare('SELECT * FROM users WHERE id = ? AND is_active = 1');
-        $stmt->execute([$_SESSION['user_id']]);
+        $stmt->execute([$_COOKIE['user_id']]);
         $user = $stmt->fetch() ?: null;
         if (!$user) {
-            session_destroy();
+            setcookie('user_id', '', time() - 3600, '/');
         }
     }
     return $user;
@@ -56,12 +56,10 @@ function uploadImage(array $file, string $prefix = 'img'): ?string {
     $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     if (!in_array($ext, ALLOWED_EXTENSIONS, true)) return null;
 
-    // Vérification MIME réelle
-    
-$imageInfo = getimagesize($file['tmp_name']);
-if (!$imageInfo) return null;
-$allowed_mimes = ['image/jpeg','image/png','image/gif','image/webp'];
-if (!in_array($imageInfo['mime'], $allowed_mimes, true)) return null;
+    $imageInfo = getimagesize($file['tmp_name']);
+    if (!$imageInfo) return null;
+    $allowed_mimes = ['image/jpeg','image/png','image/gif','image/webp'];
+    if (!in_array($imageInfo['mime'], $allowed_mimes, true)) return null;
 
     $filename = $prefix . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
     $dest     = UPLOAD_DIR . $filename;
