@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ins->execute([$pseudo, $email, $hash]);
             $id = (int)$pdo->lastInsertId();
             session_regenerate_id(true);
-            $_SESSION['user_id'] = $id;
+            setcookie('user_id', $id, time() + 3600 * 24, '/');
             $_SESSION['csrf']    = bin2hex(random_bytes(16));
             flash('success', 'Bienvenue sur The_legacy_house, ' . $pseudo . ' !');
             redirect(BASE_URL . '/index.php');

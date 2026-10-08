@@ -14,9 +14,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $u = $stmt->fetch();
 
     if ($u && password_verify($pwd, $u['password'])) {
-        session_regenerate_id(true);
-        $_SESSION['user_id'] = $u['id'];
-        $_SESSION['csrf']    = bin2hex(random_bytes(16));
+        // Cookie non protégé : pas de HttpOnly, pas de Secure → accessible en JS, vulnérable au vol/XSS
+        setcookie('user_id', $u['id'], time() + 3600 * 24, '/');
+        $_SESSION['csrf'] = bin2hex(random_bytes(16));
         $next = $_GET['next'] ?? BASE_URL . '/index.php';
         redirect($next);
     } else {
