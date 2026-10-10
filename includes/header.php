@@ -80,6 +80,9 @@ $cats = getPDO()->query('SELECT * FROM categories ORDER BY name')->fetchAll();
           <a href="<?= BASE_URL ?>/admin/index.php" style="color:var(--gold-400)">
             <i class="bi bi-shield-check"></i> Admin
           </a>
+          <a href="<?= BASE_URL ?>/admin/message.php" style="color:var(--gold-400)">
+            <i class="bi bi-envelope-exclamation"></i> Messages
+          </a>
         <?php endif; ?>
         <form method="POST" action="<?= BASE_URL ?>/logout.php" style="display:inline">
           <input type="hidden" name="csrf" value="<?= h($_SESSION['csrf'] ?? '') ?>">

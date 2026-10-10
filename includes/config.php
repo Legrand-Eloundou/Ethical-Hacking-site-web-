@@ -11,7 +11,7 @@ define('DB_CHARSET', 'utf8mb4');
 
 define('SITE_NAME', 'The legacy House');
 define('SITE_TAGLINE', 'Le marché qui a du goût en Auto');
-define('BASE_URL', 'http://localhost/the_legacy_house');
+define('BASE_URL', 'http://localhost:8000');
 
 define('UPLOAD_DIR', __DIR__ . '/../uploads/');
 define('UPLOAD_URL', BASE_URL . '/uploads/');
